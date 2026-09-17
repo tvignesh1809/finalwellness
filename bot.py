@@ -32,10 +32,7 @@ BRAND_HANDLE = os.getenv("BRAND_HANDLE", "@wellness_guider")
 
 
 # ---------------------------------------------------------------------------
-# GitHub Contents API helpers — used both as image hosting (Instagram needs a
-# public https:// URL, it can't accept a file upload) and as tiny persistent
-# storage (GitHub Actions runs are stateless, so "what have we already
-# posted" has to live somewhere outside the runner).
+# GitHub Contents API helpers
 # ---------------------------------------------------------------------------
 
 def _github_headers():
@@ -43,7 +40,6 @@ def _github_headers():
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         "Accept": "application/vnd.github+json",
     }
-
 
 def github_get_file(path):
     """Returns (content_bytes, sha) or (None, None) if the file doesn't exist yet."""
@@ -55,7 +51,6 @@ def github_get_file(path):
         data = response.json()
         return base64.b64decode(data["content"]), data["sha"]
     return None, None
-
 
 def github_put_file(path, content_bytes, message, sha=None):
     repo = os.getenv("GITHUB_REPOSITORY")
@@ -72,7 +67,6 @@ def github_put_file(path, content_bytes, message, sha=None):
     response.raise_for_status()
     return response.json()
 
-
 def upload_image_to_github(image_path):
     with open(image_path, "rb") as f:
         image_bytes = f.read()
@@ -85,20 +79,18 @@ def upload_image_to_github(image_path):
     time.sleep(5)
     return f"https://raw.githubusercontent.com/{repo}/{branch}/{repo_path}"
 
-
 def load_state():
     content, sha = github_get_file(STATE_PATH)
     if content is None:
         return {"used_myths": [], "category_index": 0}, None
     return json.loads(content), sha
 
-
 def save_state(state, sha):
     body = json.dumps(state, indent=2).encode("utf-8")
     github_put_file(STATE_PATH, body, "Update posted topics log", sha=sha)
 
 
-# 2. The Internal Brain (Google Gemini)
+# 2. The Internal Brain (Google Gemini) - WITH REDUNDANCY & RETRIES
 def generate_ai_content(api_key, avoid_list, category):
     client = genai.Client(api_key=api_key)
     avoid_text = ""
@@ -112,16 +104,36 @@ def generate_ai_content(api_key, avoid_list, category):
         "Focus on science and breaking taboos." + avoid_text
     )
 
-    response = client.models.generate_content(
-        model='gemini-3.6-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=WellnessPost,
-            temperature=0.9,
-        ),
-    )
-    return json.loads(response.text)
+    models_to_try = ['gemini-3.6-flash', 'gemini-3.6-pro']
+    
+    for model_name in models_to_try:
+        for attempt in range(3):
+            try:
+                print(f"Brainstorming with {model_name} (Attempt {attempt + 1}/3)...")
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=WellnessPost,
+                        temperature=0.9,
+                    ),
+                )
+                return json.loads(response.text)
+                
+            except Exception as e:
+                error_message = str(e)
+                print(f"Error encountered: {error_message}")
+                
+                if "503" in error_message or "429" in error_message:
+                    print("Server is busy. Waiting 10 seconds before retrying...")
+                    time.sleep(10)
+                else:
+                    print(f"Switching to backup model...")
+                    break 
+
+    print("All models and retries failed.")
+    return None
 
 
 # 3. Visual Designer (Pillow)
@@ -139,7 +151,6 @@ def _wrap_to_width(draw, text, font, max_width):
     if current:
         lines.append(current)
     return lines
-
 
 def generate_image(myth_text, fact_text):
     W, H = 1080, 1080
@@ -192,9 +203,9 @@ def generate_image(myth_text, fact_text):
     return image_path
 
 
-# 4. Publisher (Meta Graph API)
+# 4. Publisher (Meta Graph API) - CORRECTED TO graph.facebook.com
 def publish_to_instagram(ig_user_id, access_token, image_url, caption):
-    container_url = f"https://graph.instagram.com/{GRAPH_API_VERSION}/{ig_user_id}/media"
+    container_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{ig_user_id}/media"
     container_payload = {'image_url': image_url, 'caption': caption, 'access_token': access_token}
 
     creation_id = None
@@ -211,7 +222,7 @@ def publish_to_instagram(ig_user_id, access_token, image_url, caption):
         print("Failed to create container after retries:", container_response)
         return
 
-    publish_url = f"https://graph.instagram.com/{GRAPH_API_VERSION}/{ig_user_id}/media_publish"
+    publish_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{ig_user_id}/media_publish"
     publish_payload = {'creation_id': creation_id, 'access_token': access_token}
     publish_response = requests.post(publish_url, data=publish_payload).json()
     print("Published successfully! ID:", publish_response.get('id'))
@@ -226,8 +237,12 @@ if __name__ == "__main__":
     state, state_sha = load_state()
     category = TOPIC_CATEGORIES[state["category_index"] % len(TOPIC_CATEGORIES)]
 
-    print(f"Brainstorming with Gemini (topic: {category})...")
+    print(f"Starting generation for topic: {category}...")
     content = generate_ai_content(GEMINI_API_KEY, state["used_myths"][-30:], category)
+    
+    if not content:
+        print("Failed to generate content. Exiting workflow.")
+        exit(1)
 
     print("Generating image...")
     img_path = generate_image(content["myth"], content["fact"])

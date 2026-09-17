@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+daily_post.jpg
+.DS_Store
+venv/
+.env

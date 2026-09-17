@@ -90,7 +90,7 @@ def save_state(state, sha):
     github_put_file(STATE_PATH, body, "Update posted topics log", sha=sha)
 
 
-# 2. The Internal Brain (Google Gemini) - WITH REDUNDANCY & RETRIES
+# 2. The Internal Brain (Google Gemini) - WITH FREE PRO FALLBACK
 def generate_ai_content(api_key, avoid_list, category):
     client = genai.Client(api_key=api_key)
     avoid_text = ""
@@ -104,9 +104,11 @@ def generate_ai_content(api_key, avoid_list, category):
         "Focus on science and breaking taboos." + avoid_text
     )
 
-    models_to_try = ['gemini-3.6-flash', 'gemini-3.6-pro']
+    # Primary: Newest Flash (Fast). Backup: Free tier Pro model (Heavy).
+    models_to_try = ['gemini-3.6-flash', 'gemini-1.5-pro']
     
     for model_name in models_to_try:
+        # Give each model 3 attempts with a 30-second wait for traffic to clear
         for attempt in range(3):
             try:
                 print(f"Brainstorming with {model_name} (Attempt {attempt + 1}/3)...")
@@ -125,10 +127,12 @@ def generate_ai_content(api_key, avoid_list, category):
                 error_message = str(e)
                 print(f"Error encountered: {error_message}")
                 
+                # If server is busy (503) or rate limited (429), wait and try again
                 if "503" in error_message or "429" in error_message:
-                    print("Server is busy. Waiting 10 seconds before retrying...")
-                    time.sleep(10)
+                    print(f"Server is busy. Waiting 30 seconds before retrying {model_name}...")
+                    time.sleep(30)
                 else:
+                    # If it is a 404 Not Found or other fatal error, switch models
                     print(f"Switching to backup model...")
                     break 
 

@@ -8,33 +8,26 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
-# 1. Structured Output Schema for Gemini
+# 1. Structured Output Schema
 class WellnessPost(BaseModel):
     myth: str = Field(description="A common sexual wellness myth in India. Keep it under 20 words.")
     fact: str = Field(description="The scientific fact debunking the myth. Keep it clinical and under 25 words.")
     caption: str = Field(description="An empathetic, educational Instagram caption with emojis and hashtags.")
 
-# Rotate through these so consecutive posts don't circle the same ground.
 TOPIC_CATEGORIES = [
-    "menstrual health",
-    "fertility and conception",
-    "contraception",
-    "reproductive anatomy",
-    "safe sex and STI prevention",
-    "emotional and relationship intimacy",
-    "pregnancy and postpartum health",
+    "menstrual health", "fertility and conception", "contraception",
+    "reproductive anatomy", "safe sex and STI prevention",
+    "emotional and relationship intimacy", "pregnancy and postpartum health",
     "general sexual wellness and hygiene",
 ]
 
-STATE_PATH = "posted_topics.json"       # lives in the repo, tracks history across runs
+STATE_PATH = "posted_topics.json"
 GRAPH_API_VERSION = "v19.0"
 BRAND_HANDLE = os.getenv("BRAND_HANDLE", "@wellness_guider")
-
 
 # ---------------------------------------------------------------------------
 # GitHub Contents API helpers
 # ---------------------------------------------------------------------------
-
 def _github_headers():
     return {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
@@ -42,7 +35,6 @@ def _github_headers():
     }
 
 def github_get_file(path):
-    """Returns (content_bytes, sha) or (None, None) if the file doesn't exist yet."""
     repo = os.getenv("GITHUB_REPOSITORY")
     branch = os.getenv("GITHUB_BRANCH", "main")
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -75,7 +67,6 @@ def upload_image_to_github(image_path):
     github_put_file(repo_path, image_bytes, f"Add generated post image {timestamp}")
     repo = os.getenv("GITHUB_REPOSITORY")
     branch = os.getenv("GITHUB_BRANCH", "main")
-    # Give GitHub's raw CDN a moment to catch up before Instagram tries to fetch it.
     time.sleep(5)
     return f"https://raw.githubusercontent.com/{repo}/{branch}/{repo_path}"
 
@@ -88,7 +79,6 @@ def load_state():
 def save_state(state, sha):
     body = json.dumps(state, indent=2).encode("utf-8")
     github_put_file(STATE_PATH, body, "Update posted topics log", sha=sha)
-
 
 # 2. The Internal Brain (Google Gemini) - WITH FREE PRO FALLBACK
 def generate_ai_content(api_key, avoid_list, category):
@@ -104,11 +94,8 @@ def generate_ai_content(api_key, avoid_list, category):
         "Focus on science and breaking taboos." + avoid_text
     )
 
-    # Primary: Newest Flash (Fast). Backup: Free tier Pro model (Heavy).
     models_to_try = ['gemini-3.6-flash', 'gemini-1.5-pro']
-    
     for model_name in models_to_try:
-        # Give each model 3 attempts with a 30-second wait for traffic to clear
         for attempt in range(3):
             try:
                 print(f"Brainstorming with {model_name} (Attempt {attempt + 1}/3)...")
@@ -122,23 +109,18 @@ def generate_ai_content(api_key, avoid_list, category):
                     ),
                 )
                 return json.loads(response.text)
-                
             except Exception as e:
                 error_message = str(e)
                 print(f"Error encountered: {error_message}")
-                
-                # If server is busy (503) or rate limited (429), wait and try again
                 if "503" in error_message or "429" in error_message:
                     print(f"Server is busy. Waiting 30 seconds before retrying {model_name}...")
                     time.sleep(30)
                 else:
-                    # If it is a 404 Not Found or other fatal error, switch models
                     print(f"Switching to backup model...")
                     break 
 
     print("All models and retries failed.")
     return None
-
 
 # 3. Visual Designer (Pillow)
 def _wrap_to_width(draw, text, font, max_width):
@@ -159,9 +141,9 @@ def _wrap_to_width(draw, text, font, max_width):
 def generate_image(myth_text, fact_text):
     W, H = 1080, 1080
     BG = (250, 247, 240)
-    HEADER_BG = (124, 152, 133)     # sage green
-    MYTH_COLOR = (196, 91, 91)      # muted coral/red
-    FACT_COLOR = (74, 124, 98)      # deep sage/teal-green
+    HEADER_BG = (124, 152, 133)
+    MYTH_COLOR = (196, 91, 91)
+    FACT_COLOR = (74, 124, 98)
     TEXT_DARK = (51, 51, 51)
 
     img = Image.new('RGB', (W, H), color=BG)
@@ -175,7 +157,6 @@ def generate_image(myth_text, fact_text):
         print("Error: Font files missing.")
         return None
 
-    # Header bar
     draw.rectangle([0, 0, W, 150], fill=HEADER_BG)
     title = "MYTH vs FACT"
     tw = draw.textlength(title, font=font_title)
@@ -184,10 +165,7 @@ def generate_image(myth_text, fact_text):
     def draw_block(y_top, label, label_color, body_text):
         pad_x, pad_y = 26, 12
         lw = draw.textlength(label, font=font_label)
-        draw.rounded_rectangle(
-            [80, y_top, 80 + lw + pad_x * 2, y_top + 38 + pad_y * 2],
-            radius=22, fill=label_color,
-        )
+        draw.rounded_rectangle([80, y_top, 80 + lw + pad_x * 2, y_top + 38 + pad_y * 2], radius=22, fill=label_color)
         draw.text((80 + pad_x, y_top + pad_y), label, fill=(255, 255, 255), font=font_label)
 
         y = y_top + 38 + pad_y * 2 + 28
@@ -206,7 +184,7 @@ def generate_image(myth_text, fact_text):
     img.save(image_path, quality=95)
     return image_path
 
-# 4. Publisher (Meta Graph API)
+# 4. Publisher (Meta Graph API) - UPGRADED WITH STATUS CHECKER
 def publish_to_instagram(ig_user_id, access_token, image_url, caption):
     container_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{ig_user_id}/media"
     container_payload = {'image_url': image_url, 'caption': caption, 'access_token': access_token}
@@ -227,11 +205,10 @@ def publish_to_instagram(ig_user_id, access_token, image_url, caption):
         
     print(f"Container created (ID: {creation_id}). Waiting for Meta to process the image...")
 
-    # Wait for Meta to download the image from GitHub before publishing
     status_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{creation_id}"
     status_params = {'fields': 'status_code', 'access_token': access_token}
     
-    for attempt in range(6): # Poll for up to 30 seconds
+    for attempt in range(6): 
         status_res = requests.get(status_url, params=status_params).json()
         status_code = status_res.get('status_code')
         
@@ -251,8 +228,41 @@ def publish_to_instagram(ig_user_id, access_token, image_url, caption):
     publish_payload = {'creation_id': creation_id, 'access_token': access_token}
     publish_response = requests.post(publish_url, data=publish_payload).json()
     
-    # Unmask any hidden publishing errors
     if 'id' in publish_response:
         print("Published successfully! ID:", publish_response['id'])
     else:
         print("Failed to publish container. Full Error:", publish_response)
+
+
+# 5. The Execution Block
+if __name__ == "__main__":
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    IG_USER_ID = os.getenv("IG_USER_ID")
+    IG_ACCESS_TOKEN = os.getenv("IG_ACCESS_TOKEN")
+
+    print("Loading topic history...")
+    state, state_sha = load_state()
+    category = TOPIC_CATEGORIES[state["category_index"] % len(TOPIC_CATEGORIES)]
+
+    print(f"Starting generation for topic: {category}...")
+    content = generate_ai_content(GEMINI_API_KEY, state["used_myths"][-30:], category)
+    
+    if not content:
+        print("Failed to generate content. Exiting workflow.")
+        exit(1)
+
+    print("Generating image...")
+    img_path = generate_image(content["myth"], content["fact"])
+
+    if img_path:
+        print("Uploading image to GitHub...")
+        public_url = upload_image_to_github(img_path)
+
+        caption_with_cta = content["caption"] + "\n\nWant the full guide on unlearning intimacy myths? Comment the word MYTH below and I will DM it to you for free!"
+
+        print("Publishing to Instagram...")
+        publish_to_instagram(IG_USER_ID, IG_ACCESS_TOKEN, public_url, caption_with_cta)
+
+        state["used_myths"] = (state["used_myths"] + [content["myth"]])[-30:]
+        state["category_index"] = (state["category_index"] + 1) % len(TOPIC_CATEGORIES)
+        save_state(state, state_sha)

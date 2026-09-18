@@ -206,8 +206,7 @@ def generate_image(myth_text, fact_text):
     img.save(image_path, quality=95)
     return image_path
 
-
-# 4. Publisher (Meta Graph API) - CORRECTED TO graph.facebook.com
+# 4. Publisher (Meta Graph API)
 def publish_to_instagram(ig_user_id, access_token, image_url, caption):
     container_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{ig_user_id}/media"
     container_payload = {'image_url': image_url, 'caption': caption, 'access_token': access_token}
@@ -225,42 +224,35 @@ def publish_to_instagram(ig_user_id, access_token, image_url, caption):
     if not creation_id:
         print("Failed to create container after retries:", container_response)
         return
+        
+    print(f"Container created (ID: {creation_id}). Waiting for Meta to process the image...")
 
+    # Wait for Meta to download the image from GitHub before publishing
+    status_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{creation_id}"
+    status_params = {'fields': 'status_code', 'access_token': access_token}
+    
+    for attempt in range(6): # Poll for up to 30 seconds
+        status_res = requests.get(status_url, params=status_params).json()
+        status_code = status_res.get('status_code')
+        
+        if status_code == 'FINISHED':
+            print("Image processed successfully by Meta!")
+            break
+        elif status_code == 'ERROR':
+            print("CRITICAL ERROR: Meta could not download the image from GitHub:", status_res)
+            print("FIX: Check if your GitHub repository is still set to 'Private'. It must be 'Public' for Meta to read the images.")
+            return
+        else:
+            print(f"Container status is '{status_code}'. Waiting 5s...")
+            time.sleep(5)
+
+    print("Publishing container to Instagram feed...")
     publish_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{ig_user_id}/media_publish"
     publish_payload = {'creation_id': creation_id, 'access_token': access_token}
     publish_response = requests.post(publish_url, data=publish_payload).json()
-    print("Published successfully! ID:", publish_response.get('id'))
-
-
-if __name__ == "__main__":
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    IG_USER_ID = os.getenv("IG_USER_ID")
-    IG_ACCESS_TOKEN = os.getenv("IG_ACCESS_TOKEN")
-
-    print("Loading topic history...")
-    state, state_sha = load_state()
-    category = TOPIC_CATEGORIES[state["category_index"] % len(TOPIC_CATEGORIES)]
-
-    print(f"Starting generation for topic: {category}...")
-    content = generate_ai_content(GEMINI_API_KEY, state["used_myths"][-30:], category)
     
-    if not content:
-        print("Failed to generate content. Exiting workflow.")
-        exit(1)
-
-    print("Generating image...")
-    img_path = generate_image(content["myth"], content["fact"])
-
-    if img_path:
-        print("Uploading image to GitHub...")
-        public_url = upload_image_to_github(img_path)
-
-        # Inject the Comment-to-DM Sales Funnel CTA
-        caption_with_cta = content["caption"] + "\n\nWant the full guide on unlearning intimacy myths? Comment the word MYTH below and I will DM it to you for free!"
-
-        print("Publishing to Instagram...")
-        publish_to_instagram(IG_USER_ID, IG_ACCESS_TOKEN, public_url, caption_with_cta)
-
-        state["used_myths"] = (state["used_myths"] + [content["myth"]])[-30:]
-        state["category_index"] = (state["category_index"] + 1) % len(TOPIC_CATEGORIES)
-        save_state(state, state_sha)
+    # Unmask any hidden publishing errors
+    if 'id' in publish_response:
+        print("Published successfully! ID:", publish_response['id'])
+    else:
+        print("Failed to publish container. Full Error:", publish_response)

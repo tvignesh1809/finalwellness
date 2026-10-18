@@ -1,6 +1,5 @@
 {
   "used_myths": [
-    "Postpartum depression is merely temporary emotional weakness that resolves on its own without professional medical intervention.",
     "Masturbation causes severe physical weakness, hair loss, and vision impairment in young individuals.",
     "You cannot get pregnant if you have sexual intercourse during your period.",
     "Irregular periods mean a woman is completely infertile and cannot conceive a child naturally.",
@@ -29,7 +28,8 @@
     "Menstrual blood is dirty, toxic waste that cleanses the female body of impurities every month.",
     "Age affects only female fertility; men maintain peak fertility and sperm quality throughout their entire lives.",
     "A vasectomy leads to erectile dysfunction, decreased testosterone, and loss of male sexual performance.",
-    "Menstrual products like tampons can get permanently lost inside the body through the cervical opening."
+    "Menstrual products like tampons can get permanently lost inside the body through the cervical opening.",
+    "Visible symptoms are always present if someone has a sexually transmitted infection."
   ],
-  "category_index": 4
+  "category_index": 5
 }

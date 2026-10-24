@@ -1,6 +1,5 @@
 {
   "used_myths": [
-    "Pregnant women must double their food intake to properly nourish both themselves and the developing baby.",
     "Washing intimate areas with antiseptics after sex prevents sexually transmitted infections and cleanses the body.",
     "Touching food or entering the kitchen during menstruation causes food to spoil or become contaminated.",
     "A woman is equally fertile and can conceive on any day of her menstrual cycle.",
@@ -29,7 +28,8 @@
     "Washing your hair or taking a bath during your period slows blood flow and harms your health.",
     "Women diagnosed with Polycystic Ovary Syndrome (PCOS) are completely infertile and cannot conceive naturally.",
     "Emergency contraceptive pills act as abortion pills and terminate an already established pregnancy.",
-    "Frequent sexual intercourse permanently stretches the vagina, causing it to become loose over time."
+    "Frequent sexual intercourse permanently stretches the vagina, causing it to become loose over time.",
+    "Wearing two condoms simultaneously offers double protection against sexually transmitted infections and unintended pregnancy."
   ],
-  "category_index": 4
+  "category_index": 5
 }

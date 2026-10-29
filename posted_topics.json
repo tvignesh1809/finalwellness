@@ -1,6 +1,5 @@
 {
   "used_myths": [
-    "Having sexual intercourse during an uncomplicated pregnancy is dangerous and can physically harm the developing baby.",
     "Pubic hair is inherently unhygienic and must be completely removed to maintain proper intimate cleanliness.",
     "Exercising or engaging in physical activity during menstruation is dangerous and worsens heavy menstrual bleeding.",
     "Infertility is exclusively a female health condition, so male partners do not require medical evaluation.",
@@ -29,7 +28,8 @@
     "Severe, debilitating period pain is completely normal and something every woman must simply endure without medical care.",
     "Elevating your legs after intercourse is required to ensure sperm reaches the egg for successful conception.",
     "Copper T (IUD) causes permanent damage to the uterus and leads to lifelong infertility.",
-    "The clitoris is just a small external bump located above the vaginal opening."
+    "The clitoris is just a small external bump located above the vaginal opening.",
+    "Sexually transmitted infections cannot be transmitted through oral sex, making protection unnecessary."
   ],
-  "category_index": 4
+  "category_index": 5
 }

@@ -1,6 +1,5 @@
 {
   "used_myths": [
-    "Postpartum depression is just temporary sadness that always resolves naturally without medical or psychological intervention.",
     "Masturbation causes physical weakness, dark circles under the eyes, and loss of stamina in men.",
     "Washing your hair or taking a bath during your period slows blood flow and harms your health.",
     "Women diagnosed with Polycystic Ovary Syndrome (PCOS) are completely infertile and cannot conceive naturally.",
@@ -29,7 +28,8 @@
     "Menstrual blood is impure, toxic waste that releases harmful toxins from the body every month.",
     "Infertility is strictly a female medical issue, and men do not contribute to conception difficulties.",
     "Getting a vasectomy reduces a man's sexual drive, physical strength, and overall masculinity.",
-    "Semen is produced entirely within the testicles."
+    "Semen is produced entirely within the testicles.",
+    "STIs always show visible symptoms, so if your partner appears healthy, using protection is unnecessary."
   ],
-  "category_index": 4
+  "category_index": 5
 }

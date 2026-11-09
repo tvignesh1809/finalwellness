@@ -1,6 +1,5 @@
 {
   "used_myths": [
-    "Washing your hair or taking a bath during your period slows blood flow and harms your health.",
     "Women diagnosed with Polycystic Ovary Syndrome (PCOS) are completely infertile and cannot conceive naturally.",
     "Emergency contraceptive pills act as abortion pills and terminate an already established pregnancy.",
     "Frequent sexual intercourse permanently stretches the vagina, causing it to become loose over time.",
@@ -29,7 +28,8 @@
     "Getting a vasectomy reduces a man's sexual drive, physical strength, and overall masculinity.",
     "Semen is produced entirely within the testicles.",
     "STIs always show visible symptoms, so if your partner appears healthy, using protection is unnecessary.",
-    "A decrease in emotional intimacy or physical desire means a relationship is fundamentally failing or love has ended."
+    "A decrease in emotional intimacy or physical desire means a relationship is fundamentally failing or love has ended.",
+    "Pregnant women must double their daily food intake to properly nourish the growing fetus."
   ],
-  "category_index": 6
+  "category_index": 7
 }

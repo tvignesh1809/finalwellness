@@ -1,6 +1,5 @@
 {
   "used_myths": [
-    "STIs always show visible symptoms, so if your partner appears healthy, using protection is unnecessary.",
     "A decrease in emotional intimacy or physical desire means a relationship is fundamentally failing or love has ended.",
     "Pregnant women must double their daily food intake to properly nourish the growing fetus.",
     "Frequent masturbation causes severe physical weakness, hair loss, and permanent damage to overall bodily strength.",
@@ -29,7 +28,8 @@
     "Breastfeeding acts as a guaranteed natural birth control method that completely prevents a new pregnancy.",
     "Washing inside the vagina with harsh soaps or intimate washes is necessary for maintaining proper personal hygiene.",
     "Menstrual blood is dirty, toxic body waste that releases impurities from a woman's body every month.",
-    "Infertility is exclusively a female health issue, and men do not contribute to conception difficulties."
+    "Infertility is exclusively a female health issue, and men do not contribute to conception difficulties.",
+    "Vasectomy causes loss of male virility, sexual stamina, and overall physical strength in men."
   ],
-  "category_index": 2
+  "category_index": 3
 }
